@@ -4,8 +4,7 @@ material {
     requires : [
         uv0
     ],
-    blending : masked,
-    maskThreshold : 0.5,
+    blending : transparent,
     parameters : [
         {
             type : float,
@@ -21,9 +20,9 @@ material {
 fragment {
     float3 interpColor(float radio)
     {
-        float3 colorMax = float3(0.7, 0.7, 0.7);
+        float3 colorMax = float3(0.5, 0.5, 0.5);
         float3 colorMin = float3(0.2, 0.2, 0.2);
-        return colorMax * (1.0 - radio) + colorMin * radio;
+        return colorMin * (1.0 - radio) + colorMax * radio;
     }
 
     void material(inout MaterialInputs material) {
@@ -32,7 +31,6 @@ fragment {
         float2 uv = uvToRenderTargetUV(getUV0());
         float2 center = float2(0.5, 0.5);
         float currentRadius = length(float3(uv, 0) - float3(center, 0));
-
 
         if(currentRadius < materialParams.outerRadius)
         {
@@ -46,8 +44,10 @@ fragment {
             material.baseColor.rgb = interpColor(radio);
         }
 
+        material.baseColor.a = 0.1;
+
         float maxRadius = materialParams.outerRadius > materialParams.innerRadius ? materialParams.outerRadius : materialParams.innerRadius;
-        if(currentRadius > maxRadius) material.baseColor.a = 0.0;
+        if(currentRadius > maxRadius) material.baseColor = float4(0, 0, 0, 0);
 
     }
 }
