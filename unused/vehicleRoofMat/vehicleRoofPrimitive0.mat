@@ -1,0 +1,22 @@
+material {
+    name : vehicleRoofPrimitive0,
+    shadingModel : lit,
+    parameters : [
+        {
+            type : float,
+            name : alpha
+        }
+    ]
+}
+
+fragment {
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+        material.baseColor.rgb = float3(0, 0, 0) * materialParams.alpha;
+        material.baseColor.a = materialParams.alpha;
+        material.roughness = 0.04;
+        material.metallic = 0.0;
+        material.clearCoat = 1.0;
+        material.clearCoatRoughness = 0.03;
+    }
+}

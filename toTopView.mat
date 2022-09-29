@@ -1,0 +1,80 @@
+material {
+    name : toTopView,
+    shadingModel : unlit,
+    requires : [
+        uv0
+    ],
+    blending : masked,
+    maskThreshold : 0.5,
+    parameters : [
+        {
+            type : sampler2d,
+            name : vehicleColorTexture
+        },
+        {
+            type : sampler2d,
+            name : vehicleRoofColorTexture
+        },
+        {
+            type : float,
+            name : viewportBottom
+        },
+        {
+            type : float,
+            name : viewportHeight
+        },
+        {
+            type : float,
+            name : interpRadio
+        },
+        {
+            type : bool,
+            name : reverse
+        }
+    ]
+}
+
+fragment {
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+  
+        float yCenterBegin = (materialParams.viewportBottom + materialParams.viewportHeight / 2.0) / getResolution().y;
+        float yCenterEnd = 0.5;
+        float viewportHeightBegin = materialParams.viewportHeight / getResolution().y;
+        float viewportHeightEnd = 1.0;
+        if(materialParams.reverse)
+        {
+            float yCenterTemp = yCenterBegin;
+            yCenterBegin = yCenterEnd;
+            yCenterEnd = yCenterTemp;
+
+            float viewportHeightTemp = viewportHeightBegin;
+            viewportHeightBegin = viewportHeightEnd;
+            viewportHeightEnd = viewportHeightTemp;
+        }
+        float yCenterCurrent = yCenterBegin * (1.0 - materialParams.interpRadio) + yCenterEnd * materialParams.interpRadio;
+        float viewportHeightCurrent = viewportHeightBegin * (1.0 - materialParams.interpRadio) + viewportHeightEnd * materialParams.interpRadio;
+
+        float2 uv = getNormalizedViewportCoord().xy;
+        if(uv.y > yCenterCurrent - viewportHeightCurrent / 2.0 && uv.y < yCenterCurrent + viewportHeightCurrent / 2.0)
+        {
+            float2 samplingUv = uvToRenderTargetUV(float2(uv.x, 0.5 + uv.y - yCenterCurrent));
+            float4 vehicleColor = texture(materialParams_vehicleColorTexture, samplingUv);
+            float4 vehicleRoofColor = texture(materialParams_vehicleRoofColorTexture, samplingUv);
+
+            float slowApproachingRadio = pow(materialParams.interpRadio, 2.0);
+            float quickApproachingRadio = -pow(materialParams.interpRadio - 1.0, 2.0) + 1.0;
+            if(materialParams.reverse)
+                material.baseColor.rgb = vehicleColor.rgb + vehicleRoofColor.rgb * quickApproachingRadio;
+            else
+                material.baseColor.rgb = vehicleColor.rgb + vehicleRoofColor.rgb * (1.0 - slowApproachingRadio);
+
+            material.baseColor.a = vehicleColor.a > 0.0 ? vehicleColor.a : vehicleRoofColor.a;
+        }
+        else
+        {
+            material.baseColor.a = 0.0;
+        }
+
+    }
+}

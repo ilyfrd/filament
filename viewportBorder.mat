@@ -1,0 +1,34 @@
+material {
+    name : viewportBorder,
+    shadingModel : unlit,
+    requires : [
+        uv0
+    ],
+    blending : masked,
+    maskThreshold : 0.5
+}
+
+fragment {
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+        float2 uv = getNormalizedViewportCoord().xy;
+        float4 resolution = getResolution();
+        float width = resolution.x;
+        float height = resolution.y;
+        float borderWidth = 9.0; // in pixels
+        if(
+            uv.x * width < borderWidth + 1.0 || 
+            uv.x * width > width - borderWidth - 1.0 || 
+            uv.y * height < borderWidth + 1.0 || 
+            uv.y * height > height - borderWidth - 1.0)
+        {
+            material.baseColor.rgb = float3(1, 1, 0);
+            material.baseColor.a = 1.0;
+        }
+        else
+        {
+            material.baseColor.rgb = float3(0, 0, 0);
+            material.baseColor.a = 0.0;
+        }
+    }
+}

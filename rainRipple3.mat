@@ -1,0 +1,80 @@
+material {
+    name : rainRipple3,
+    shadingModel : lit,
+    blending : transparent,
+    requires : [
+        uv0
+    ],
+    parameters : [
+        {
+            type : sampler2d,
+            name : normal1
+        },
+        {
+            type : sampler2d,
+            name : normal2
+        },
+        {
+            type : sampler2d,
+            name : normal3
+        },
+        {
+            type : sampler2d,
+            name : normal4
+        },
+        {
+            type : sampler2d,
+            name : random
+        },
+        {
+            type : int,
+            name : index
+        },
+        {
+            type : float,
+            name : refreshTime
+        }
+    ]
+}
+
+fragment {
+    float random(vec2 w) {
+        const vec3 m = vec3(0.06711056, 0.00583715, 52.9829189);
+        return fract(m.z * fract(dot(w, m.xy)));
+    }
+
+    void material(inout MaterialInputs material) {
+        
+        int index = int(getUserTime().x * 8.0) % 16;
+        int split = 4;
+        int tileSplit = 300;
+        float divider = 1.0 / float(tileSplit);
+        float2 uv = uvToRenderTargetUV(getUV0());
+        float2 tileUv = float2(mod(uv, divider) / divider);
+        float2 randomUV = float2(float(int(uv.x / divider)) / float(tileSplit), float(int(uv.y / divider)) / float(tileSplit));
+        tileUv = tileUv / float(split) + (1.0 / float(split) * float2(index % split, index / split));
+
+        float sampledRandom = texture(materialParams_random, float2(fract(randomUV.x / 0.06711056), fract(randomUV.y / 0.00583715))).r;
+        int normalMapIndex = int(fract(sampledRandom * materialParams.refreshTime * 1000.0) * 1000.0) % 4;
+        float3 normal;
+        if(normalMapIndex == 0)
+            normal = texture(materialParams_normal1, tileUv).rgb * 2.0 - 1.0;
+        else if(normalMapIndex == 1)
+            normal = texture(materialParams_normal2, tileUv).rgb * 2.0 - 1.0;
+        else if(normalMapIndex == 2)
+            normal = texture(materialParams_normal3, tileUv).rgb * 2.0 - 1.0;
+        else 
+            normal = texture(materialParams_normal4, tileUv).rgb * 2.0 - 1.0;
+
+        material.normal = normal;
+        prepareMaterial(material);
+
+        float waterColor = 65.0 / 255.0;
+        material.baseColor.rgba = float4(waterColor, waterColor, waterColor, 0.5);
+        material.metallic = 0.0;
+        material.roughness = 0.0;
+        material.ior = 1.33;
+
+
+    }
+}

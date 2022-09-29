@@ -1,0 +1,27 @@
+material {
+    name : skybox,
+    shadingModel : unlit,
+    requires : [
+        uv0
+    ],
+    culling : front,
+    blending : masked,
+    maskThreshold : 0.5,
+    parameters : [
+        {
+            type : sampler2d,
+            name : faceTexture
+        }
+    ]
+}
+
+fragment {
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+
+        float4 faceColor = texture(materialParams_faceTexture, uvToRenderTargetUV(getUV0()));
+        material.baseColor.rgba = faceColor.rgba;
+    }
+}
+
+ 

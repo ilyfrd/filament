@@ -1,0 +1,113 @@
+material {
+    name : rainLines,
+    shadingModel : unlit,
+    blending : masked,
+    maskThreshold : 0.5,
+    requires : [
+        uv0
+    ],
+    parameters : [
+        {
+            type : float,
+            name : refreshTime
+        },
+        {
+            type : int,
+            name : linesCountRow
+        },
+        {
+            type : int,
+            name : linesCountCol
+        },
+        {
+            type : float,
+            name : rainAreaWidth
+        },
+        {
+            type : float,
+            name : rainAreaHeight
+        },
+        {
+            type : sampler2d,
+            name : rainDropTexture
+        },
+        {
+            type : sampler2d,
+            name : rainNoise
+        }
+    ]
+    
+}
+
+vertex {
+    float random(const highp vec2 w) {
+        const vec3 m = vec3(0.06711056, 0.00583715, 52.9829189);
+        return fract(m.z * fract(dot(w, m.xy)));
+    }
+
+    void materialVertex(inout MaterialVertexInputs material) {
+        float3 localPosition = getPosition().xyz;
+
+        int vertexIndex = getVertexIndex();
+        int lineIndex = vertexIndex / 4;
+        float2 noiseSamplingUv;
+        noiseSamplingUv.x = float(lineIndex / materialParams.linesCountCol) / float(materialParams.linesCountRow);
+        noiseSamplingUv.y = float(lineIndex % materialParams.linesCountCol) / float(materialParams.linesCountCol);
+        float droppingHeight = texture(materialParams_rainNoise, noiseSamplingUv * fract(materialParams.refreshTime * 1000.0)).r * 50.0;
+        float lineLength = texture(materialParams_rainNoise, noiseSamplingUv * fract(materialParams.refreshTime * 100.0)).r * 0.6;
+        
+        float2 randomFactor;
+        randomFactor.x = fract(noiseSamplingUv.x * noiseSamplingUv.y * materialParams.refreshTime * 100.0);
+        randomFactor.y = fract(noiseSamplingUv.x * noiseSamplingUv.y * materialParams.refreshTime * 1000.0);
+        randomFactor = randomFactor * 2.0 - 1.0;
+        float extentWidth = materialParams.rainAreaWidth / float(materialParams.linesCountRow - 1);
+        float extentHeight = materialParams.rainAreaHeight / float(materialParams.linesCountCol - 1);
+
+        localPosition.x += randomFactor.x * extentWidth / 2.0;
+        localPosition.z += randomFactor.y * extentHeight / 2.0;
+
+        localPosition.y = droppingHeight;
+        float elapsedTime = getUserTime().x - materialParams.refreshTime;
+        float3 direction = normalize(float3(1, 10, 1));
+        localPosition -= elapsedTime * elapsedTime * direction * 0.98 * 10.0;
+
+        float3 startPoint = localPosition;
+        float3 endPoint = localPosition - direction * lineLength;
+        float3 cameraPosition = getWorldCameraPosition() + getWorldOffset();
+        float3 normalVector = normalize(cross((startPoint - cameraPosition), (endPoint - cameraPosition)));
+        
+        float widthFactor = 0.001;
+        if(vertexIndex % 4 == 0)
+        {
+            localPosition = endPoint + normalVector * widthFactor;
+        }
+        else if(vertexIndex % 4 == 1)
+        {
+            localPosition = endPoint - normalVector * widthFactor;
+        }
+        else if(vertexIndex % 4 == 2)
+        {
+            localPosition = startPoint - normalVector * widthFactor;
+        }
+        else
+        {
+            localPosition = startPoint + normalVector * widthFactor;
+        }
+
+        material.worldPosition = mulMat4x4Float3(getWorldFromModelMatrix(), localPosition);
+    }
+}
+
+fragment {
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+       
+        float4 color = texture(materialParams_rainDropTexture, getUV0());
+        material.baseColor = color;
+        if(color.a > 0.5)
+        {
+            float colorIntensity = 0.5;
+            material.baseColor.rgb = float3(colorIntensity, colorIntensity, colorIntensity);
+        }
+    }
+}

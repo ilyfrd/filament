@@ -1,0 +1,48 @@
+material {
+    name : billboard,
+    requires : [
+        uv0
+    ],
+    shadingModel : unlit,
+    parameters : [
+        {
+            type : sampler2d,
+            name : vehicleColorTexture
+        },
+        {
+            type : sampler2d,
+            name : vehicleDepthTexture
+        }
+    ]
+}
+
+fragment {
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+
+        float4 vehicleColor = texture(materialParams_vehicleColorTexture, uvToRenderTargetUV(getNormalizedViewportCoord().xy));
+        float vehicleDepth = texture(materialParams_vehicleDepthTexture, uvToRenderTargetUV(getNormalizedViewportCoord().xy)).r;
+        float extent = 0.2;
+        float cuttingPlaneX = -extent + 2.0 * extent * mod(getUserTime().x, 3.0);
+        float3 lineDirect = -getWorldViewVector();
+        float3 lineBegin = getWorldCameraPosition() + getWorldOffset();
+        float3 lineEnd = lineBegin + lineDirect * 1000.0;
+        float radio = (lineBegin.x - cuttingPlaneX) / (lineBegin.x - lineEnd.x);
+        float3 intersectedPoint = lineBegin + (lineEnd - lineBegin) * radio;
+        intersectedPoint -= getWorldOffset();
+        float4 ndcCoordinate = getClipFromWorldMatrix() * float4(intersectedPoint, 1);
+        float depth = ndcCoordinate.z / ndcCoordinate.w;
+
+        if(vehicleDepth > 0.0 && vehicleDepth < depth)
+        {
+            material.baseColor.rgb = vehicleColor.rgb + float3(0, 1, 0) * 0.5;
+        }
+        else
+        {
+            material.baseColor.rgb = vehicleColor.rgb;
+        }
+
+    }
+}
+
+ 

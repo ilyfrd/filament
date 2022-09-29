@@ -1,0 +1,20 @@
+material {
+    name : lit,
+    shadingModel : lit,
+    depthCulling : false,
+    parameters : [
+        {
+            type : float,
+            name : radio
+        }
+    ]
+}
+
+fragment {
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+        material.baseColor.rgb = float3(0, 1, 0) * materialParams.radio;
+    }
+}
+
+ 

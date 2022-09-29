@@ -1,0 +1,48 @@
+material {
+    name : Unlit,
+    requires : [
+        uv0
+    ],
+    shadingModel : unlit,
+    depthCulling : false,
+    parameters : [
+        {
+            type : sampler2d,
+            name : vehicleColorTexture
+        },
+        {
+            type : sampler2d,
+            name : vehicleDepthTexture
+        },
+        {
+            type : sampler2d,
+            name : tireColorTexture
+        },
+        {
+            type : sampler2d,
+            name : tireDepthTexture
+        }
+    ]
+}
+
+fragment {
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+        float4 vehicleColor = texture(materialParams_vehicleColorTexture, uvToRenderTargetUV(getNormalizedViewportCoord().xy));
+        float4 chargingColor = texture(materialParams_tireColorTexture, uvToRenderTargetUV(getNormalizedViewportCoord().xy));
+        float vehicleDepth = texture(materialParams_vehicleDepthTexture, uvToRenderTargetUV(getNormalizedViewportCoord().xy)).r;
+        float chargingDepth = texture(materialParams_tireDepthTexture, uvToRenderTargetUV(getNormalizedViewportCoord().xy)).r;
+
+        if(chargingDepth < vehicleDepth)
+        {
+            material.baseColor.rgb = vehicleColor.rgb * 1.0 + chargingColor.rgb * 0.5;
+        }
+        else if(chargingDepth > vehicleDepth)
+        {
+            material.baseColor.rgb = chargingColor.rgb;
+        }
+
+    }
+}
+
+ 

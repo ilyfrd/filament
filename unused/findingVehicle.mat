@@ -1,0 +1,53 @@
+material {
+    name : findingVehicle,
+    shadingModel : unlit,
+    requires : [
+        uv0
+    ],
+    blending : masked,
+    maskThreshold : 0.5,
+    parameters : [
+        {
+            type : float,
+            name : innerRadius
+        },
+        {
+            type : float,
+            name : outerRadius
+        }
+    ]
+}
+
+fragment {
+    float3 interpColor(float radio)
+    {
+        float3 colorMax = float3(0.7, 0.7, 0.7);
+        float3 colorMin = float3(0.2, 0.2, 0.2);
+        return colorMax * (1.0 - radio) + colorMin * radio;
+    }
+
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+
+        float2 uv = uvToRenderTargetUV(getUV0());
+        float2 center = float2(0.5, 0.5);
+        float currentRadius = length(float3(uv, 0) - float3(center, 0));
+
+
+        if(currentRadius < materialParams.outerRadius)
+        {
+            float radio = currentRadius / materialParams.outerRadius;
+            material.baseColor.rgb = interpColor(radio);
+        }
+
+        if(currentRadius < materialParams.innerRadius)
+        {
+            float radio = 1.0 - currentRadius / materialParams.innerRadius;
+            material.baseColor.rgb = interpColor(radio);
+        }
+
+        float maxRadius = materialParams.outerRadius > materialParams.innerRadius ? materialParams.outerRadius : materialParams.innerRadius;
+        if(currentRadius > maxRadius) material.baseColor.a = 0.0;
+
+    }
+}

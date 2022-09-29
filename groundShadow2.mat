@@ -1,0 +1,35 @@
+material {
+    name : groundShadow,
+    shadingModel : unlit,
+    blending : transparent,
+    parameters : [
+        {
+            type : sampler2d,
+            name : vehicleColorTexture
+        },
+        {
+            type : mat4,
+            name : worldToClipMatrix
+        }
+    ]
+}
+
+fragment {
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+
+        float4 clipSpacePosition = materialParams.worldToClipMatrix * float4(getWorldPosition() + getWorldOffset(), 1.0);
+        float2 uv = float2(clipSpacePosition.x / clipSpacePosition.w, clipSpacePosition.y / clipSpacePosition.w);
+        uv = (uv + 1.0) / 2.0;
+        float4 vehicleColor = texture(materialParams_vehicleColorTexture, uvToRenderTargetUV(uv));
+
+        float offset = 0.000001;
+        if(vehicleColor.r > offset || vehicleColor.g > offset || vehicleColor.b > offset)
+            material.baseColor = float4(0, 0, 0, 0.7);
+        else
+            material.baseColor = float4(0, 0, 0, 0);
+
+    }
+}
+
+ 
