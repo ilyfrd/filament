@@ -8,21 +8,44 @@ material {
     parameters : [
         {
             type : float,
-            name : innerRadius
+            name : innerRadius1
         },
         {
             type : float,
-            name : outerRadius
+            name : outerRadius1
+        },
+        {
+            type : float,
+            name : innerRadius2
+        },
+        {
+            type : float,
+            name : outerRadius2
         }
     ]
 }
 
 fragment {
-    float3 interpColor(float radio)
+    float4 computerColor(float currentRadius, float innerRadius, float outerRadius)
     {
-        float3 colorMax = float3(0.5, 0.5, 0.5);
-        float3 colorMin = float3(0.2, 0.2, 0.2);
-        return colorMin * (1.0 - radio) + colorMax * radio;
+        float4 result;
+
+        float4 brightestColor = float4(0.3, 0.3, 0.3, 0.1);
+
+        if(outerRadius > innerRadius && currentRadius < outerRadius)
+        {
+            result = brightestColor;
+            float range = innerRadius * 1.3;
+            float radio = 1.0;
+            if(currentRadius < range)
+                radio = pow(currentRadius / range, 13.0);
+
+            result = brightestColor * radio;
+        }
+        else
+            result = float4(0, 0, 0, 0);
+
+        return result;
     }
 
     void material(inout MaterialInputs material) {
@@ -32,22 +55,9 @@ fragment {
         float2 center = float2(0.5, 0.5);
         float currentRadius = length(float3(uv, 0) - float3(center, 0));
 
-        if(currentRadius < materialParams.outerRadius)
-        {
-            float radio = currentRadius / materialParams.outerRadius;
-            material.baseColor.rgb = interpColor(radio);
-        }
-
-        if(currentRadius < materialParams.innerRadius)
-        {
-            float radio = 1.0 - currentRadius / materialParams.innerRadius;
-            material.baseColor.rgb = interpColor(radio);
-        }
-
-        material.baseColor.a = 0.1;
-
-        float maxRadius = materialParams.outerRadius > materialParams.innerRadius ? materialParams.outerRadius : materialParams.innerRadius;
-        if(currentRadius > maxRadius) material.baseColor = float4(0, 0, 0, 0);
-
+        float4 color1 = computerColor(currentRadius, materialParams.innerRadius1, materialParams.outerRadius1);
+        float4 color2 = computerColor(currentRadius, materialParams.innerRadius2, materialParams.outerRadius2);
+        float alpha = color1.a > color2.a ? color1.a : color2.a;
+        material.baseColor = float4(color1.rgb * 0.5 + color2.rgb * 0.5, alpha);
     }
 }
