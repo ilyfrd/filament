@@ -8,42 +8,36 @@ material {
     parameters : [
         {
             type : float,
-            name : innerRadius1
+            name : innerRadius
         },
         {
             type : float,
-            name : outerRadius1
-        },
-        {
-            type : float,
-            name : innerRadius2
-        },
-        {
-            type : float,
-            name : outerRadius2
+            name : outerRadius
         }
     ]
 }
 
 fragment {
-    float4 computerColor(float currentRadius, float innerRadius, float outerRadius)
+    float4 computerColor(float currentRadius, float radius, float radiusMax)
     {
         float4 result;
 
-        float4 brightestColor = float4(0.3, 0.3, 0.3, 0.1);
+        float colorValue = 1.0;
+        float4 brightestColor = float4(colorValue, colorValue, colorValue, 0.1);
 
-        if(outerRadius > innerRadius && currentRadius < outerRadius)
+        if(currentRadius > radius)
         {
-            result = brightestColor;
-            float range = innerRadius * 1.3;
-            float radio = 1.0;
-            if(currentRadius < range)
-                radio = pow(currentRadius / range, 13.0);
-
-            result = brightestColor * radio;
+            result = float4(0, 0, 0, 0);
         }
         else
-            result = float4(0, 0, 0, 0);
+        {
+            float radio = currentRadius / (radius * 1.5);
+            float factor = radius / radiusMax;
+            factor = pow(factor, 9.0);
+            float factor2 = 60.0 * factor + 1.0 * (1.0 - factor);
+            radio = pow(radio, factor2);
+            result = brightestColor * radio;
+        }
 
         return result;
     }
@@ -55,9 +49,9 @@ fragment {
         float2 center = float2(0.5, 0.5);
         float currentRadius = length(float3(uv, 0) - float3(center, 0));
 
-        float4 color1 = computerColor(currentRadius, materialParams.innerRadius1, materialParams.outerRadius1);
-        float4 color2 = computerColor(currentRadius, materialParams.innerRadius2, materialParams.outerRadius2);
+        float4 color1 = computerColor(currentRadius, materialParams.outerRadius, 0.5);
+        float4 color2 = computerColor(currentRadius, materialParams.innerRadius, 0.4);
         float alpha = color1.a > color2.a ? color1.a : color2.a;
-        material.baseColor = float4(color1.rgb * 0.5 + color2.rgb * 0.5, alpha);
+        material.baseColor = float4(color1.rgb * 0.3 + color2.rgb * 0.7, alpha);
     }
 }
