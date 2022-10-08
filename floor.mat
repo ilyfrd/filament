@@ -65,10 +65,10 @@ fragment {
 
         float2 uv = uvToRenderTargetUV(getUV0());
 
-        int tileSplit = 40;
+        int tileSplit = 20;
         float divider = 1.0 / float(tileSplit);
 
-        int maskTileSplit = 10;
+        int maskTileSplit = 3;
         float maskDivider = 1.0 / float(maskTileSplit);
 
         float lod = getLod(uv, divider);
@@ -78,6 +78,7 @@ fragment {
 
         float2 maskTileUv = float2(mod(uv, maskDivider) / maskDivider);
         float mask = texture(materialParams_maskTexture, maskTileUv).r;
+
 
         if(mask < 0.5)
         {
@@ -90,6 +91,7 @@ fragment {
         {
             material.normal = textureLod(materialParams_normalTexture2, tileUv, lod).rgb * 2.0 - 1.0;
         }
+        
 
         prepareMaterial(material);
         
@@ -97,16 +99,16 @@ fragment {
         {
             material.baseColor = textureLod(materialParams_albedoTexture, tileUv, lod);
             material.baseColor.rgb = toLinear(material.baseColor.rgb, 1.5);
-            material.roughness = textureLod(materialParams_roughnessTexture, tileUv, lod).r;
-            material.metallic = 0.0;
+            //material.roughness = textureLod(materialParams_roughnessTexture, tileUv, lod).r;
+            //material.metallic = 0.0;
 
         }
         else
         {
             material.baseColor = textureLod(materialParams_albedoTexture2, tileUv, lod);
             material.baseColor.rgb = toLinear(material.baseColor.rgb, 1.6);
-            material.roughness = textureLod(materialParams_roughnessTexture2, tileUv, lod).r;
-            material.metallic = 0.5727;
+            //material.roughness = textureLod(materialParams_roughnessTexture2, tileUv, lod).r;
+            //material.metallic = 0.5727;
 
         }
         
