@@ -701,3 +701,96 @@ class LineDictionary
     std::unordered_map<std::string_view, size_t> mLineIndices; // 查找表, key 是 shader 每一行的字符串, value 是该字符串在 mStrings 中的index.
     std::vector<std::unique_ptr<std::string>> mStrings; // 保存 shader 的每一行的字符串.
 }
+
+
+
+//----------------------------------------------------------------------------------------------------------
+
+// filamat 材质传入  Material::Builder
+Material::Builder::package(const void* payload, size_t size) 
+{
+    mImpl->mPayload = payload;
+    mImpl->mSize = size;
+}
+
+Material::Builder::build(Engine& engine) 
+{
+    std::unique_ptr<MaterialParser> materialParser{ createParser(upcast(engine).getBackend(), mImpl->mPayload, mImpl->mSize) };
+
+    mImpl->mMaterialParser = materialParser.release();
+
+    upcast(engine).createMaterial(*this);
+}
+
+// MaterialParser 通过 Unflattener 读取材质信息.
+FMaterial::FMaterial(FEngine& engine, const Material::Builder& builder)
+{
+    MaterialParser* parser = builder->mMaterialParser;
+
+    parser->getSIB(&mSamplerInterfaceBlock);
+
+    parser->getUIB(&mUniformInterfaceBlock);
+
+    parser->getUniformBlockBindings(&mUniformBlockBindings);
+
+    parser->getSamplerBlockBindings(&mSamplerGroupBindingInfoList, &mSamplerBindingToNameMap);
+
+    parser->getShading(&mShading);
+    parser->getMaterialProperties(&mMaterialProperties);
+    parser->getBlendingMode(&mBlendingMode);
+    parser->getInterpolation(&mInterpolation);
+    parser->getVertexDomain(&mVertexDomain);
+    parser->getMaterialDomain(&mMaterialDomain);
+    parser->getRequiredAttributes(&mRequiredAttributes);
+    parser->getRefractionMode(&mRefractionMode);
+    parser->getRefractionType(&mRefractionType);
+    parser->getReflectionMode(&mReflectionMode);
+
+}
+
+
+
+class Material 
+{
+    class Builder
+    {
+        Builder& package(const void* payload, size_t size);
+        Material* build(Engine& engine);
+    }
+
+}
+
+class FMaterial : public Material 
+{
+    mutable std::array<backend::Handle<backend::HwProgram>, VARIANT_COUNT> mCachedPrograms;
+
+    backend::RasterState mRasterState;
+    BlendingMode mRenderBlendingMode = BlendingMode::OPAQUE;
+    TransparencyMode mTransparencyMode = TransparencyMode::DEFAULT;
+    backend::FeatureLevel mFeatureLevel = backend::FeatureLevel::FEATURE_LEVEL_1;
+    Shading mShading = Shading::UNLIT;
+    BlendingMode mBlendingMode = BlendingMode::OPAQUE;
+    Interpolation mInterpolation = Interpolation::SMOOTH;
+    VertexDomain mVertexDomain = VertexDomain::OBJECT;
+    MaterialDomain mMaterialDomain = MaterialDomain::SURFACE;
+    CullingMode mCullingMode = CullingMode::NONE;
+    AttributeBitset mRequiredAttributes;
+    RefractionMode mRefractionMode = RefractionMode::NONE;
+    RefractionType mRefractionType = RefractionType::SOLID;
+    ReflectionMode mReflectionMode = ReflectionMode::DEFAULT;
+    uint64_t mMaterialProperties = 0;
+
+    bool mDoubleSided = false;
+    bool mDoubleSidedCapability = false;
+    bool mHasShadowMultiplier = false;
+    bool mHasCustomDepthShader = false;
+    bool mIsDefaultMaterial = false;
+    bool mSpecularAntiAliasing = false;
+
+    SamplerInterfaceBlock mSamplerInterfaceBlock;
+    BufferInterfaceBlock mUniformInterfaceBlock;
+    utils::FixedCapacityVector<std::pair<utils::CString, uint8_t>> mUniformBlockBindings;
+    SamplerGroupBindingInfoList mSamplerGroupBindingInfoList;
+    SamplerBindingToNameMap mSamplerBindingToNameMap;
+
+}
