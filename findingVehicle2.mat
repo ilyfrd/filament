@@ -1,0 +1,257 @@
+
+material {
+    name : findingVehicle,
+    shadingModel : unlit,
+    requires : [
+        uv0
+    ],
+    blending : transparent,
+    parameters : [
+        {
+            type : float,
+            name : elapsedTime
+        },
+        {
+            type : float,
+            name : animationDuration
+        },
+        {
+            type : float,
+            name : vanishTimePoint
+        }
+    ]
+}
+
+fragment {
+    float4 lightRingColor(float radius, float delayTime, float opacityMax)
+    {
+        float4 colorResult = float4(0, 0, 0, 0);
+
+        float lightRingWidth = 0.003;
+
+        float2 uv = uvToRenderTargetUV(getUV0());
+        float2 center = float2(0.5, 0.5);
+        float currentRadius = length(float3(uv, 0) - float3(center, 0));
+        
+        float elapsedTime = materialParams.elapsedTime - delayTime;
+        if(elapsedTime < 0.0) return colorResult;
+
+        float duration = 0.66;
+
+        float timeRadio = 0.0;
+        if(elapsedTime < duration)
+            timeRadio = elapsedTime / duration;
+        else
+            timeRadio = 1.0;
+
+        float2 P0 = float2(0, 0); 
+        float2 P1 = float2(0.2, 0.00); 
+        float2 P2 = float2(0.2, 1.00); 
+        float2 P3 = float2(1, 1); 
+        float2 currentPosition = pow(1.0-timeRadio, 3.0)*P0 + timeRadio*P1*(3.0*pow(1.0-timeRadio, 2.0)) + P2*(3.0*(1.0-timeRadio)*pow(timeRadio, 2.0)) + P3*pow(timeRadio,3.0);
+        timeRadio = currentPosition.y;
+
+        float currentRingRadius = radius * 0.8 +  radius * 0.2 * timeRadio;
+
+        if(currentRingRadius - lightRingWidth < currentRadius && currentRadius < currentRingRadius + lightRingWidth)
+        {
+            float alpha = timeRadio * opacityMax;
+            alpha *= 0.3;
+            if(materialParams.elapsedTime > materialParams.vanishTimePoint)
+            {   
+                alpha *= 1.0 - (materialParams.elapsedTime - materialParams.vanishTimePoint) / (materialParams.animationDuration - materialParams.vanishTimePoint);
+            }
+
+            colorResult = float4(1.0, 1.0, 1.0, alpha);
+            
+        }
+
+        
+
+        return colorResult;
+    }
+
+    
+
+    
+    float4 scanColor()
+    {
+        float4 colorResult = float4(0, 0, 0, 0);
+
+        float2 uv = uvToRenderTargetUV(getUV0());
+        float2 center = float2(0.5, 0.5);
+        float2 currentLine = uv - center;
+        float referenceAngle = materialParams.elapsedTime * 1.0;  
+        float2 referenceLine = float2(cos(referenceAngle), sin(referenceAngle));
+
+        float currentRadius = length(float3(uv - center, 0.0));
+
+        float angle = acos(dot(currentLine, referenceLine) / (length(currentLine) * length(referenceLine)));
+        angle = degrees(angle);
+
+        float angleMax = 150.0;
+        float colorRadio = pow(angle / angleMax, 3.0) * pow(currentRadius / 0.5, 2.0);
+
+        float duration = 1.0;
+        float timeRadio = 0.0;
+        if(materialParams.elapsedTime < duration)
+            timeRadio = materialParams.elapsedTime / duration;
+        else
+            timeRadio = 1.0;
+
+        colorRadio *= pow(timeRadio, 3.0) * 0.3;
+
+        float direction = cross(float3(referenceLine, 0.0), float3(currentLine, 0.0)).z;
+
+        if(currentRadius < 0.46 && direction > 0.0 && angle > 10.0 && angle < angleMax * timeRadio)
+        {
+            if(materialParams.elapsedTime > materialParams.vanishTimePoint)
+            {   
+                colorRadio *= 1.0 - (materialParams.elapsedTime - materialParams.vanishTimePoint) / (materialParams.animationDuration - materialParams.vanishTimePoint);
+            }
+
+            colorResult = float4(1, 1, 0, colorRadio);
+
+        }
+
+        return colorResult;
+    }
+
+    float4 arrowColor()
+    {
+        float4 colorResult = float4(0, 0, 0, 0);
+
+        for(int i = 0; i < 12; ++i)
+        {
+            float elapsedTime = materialParams.elapsedTime - 0.5 * sin(float(i));
+            if(elapsedTime < 0.0) return colorResult;
+
+            float2 uv = uvToRenderTargetUV(getUV0());
+            float2 center = float2(0.5, 0.5);
+            float2 currentLine = uv - center;
+            float2 referenceLine = float2(1, 0);
+
+            float angle = acos(dot(currentLine, referenceLine) / (length(currentLine) * length(referenceLine)));
+            angle = degrees(angle);
+
+            float currentRadius = length(float3(uv - center, 0));
+
+            float duration = 2.0;
+            float timeRadio = 0.0;
+            if(elapsedTime < duration)
+                timeRadio = elapsedTime / duration;
+            else
+                timeRadio = 1.0;
+
+            float anglePosition = 30.0 * float(i);
+            if(angle > anglePosition && angle < anglePosition + 0.8 && currentRadius > 0.06 && currentRadius < 0.3 * (-pow(timeRadio - 1.0, 4.0) + 1.0))
+            {
+                timeRadio *= 0.2;
+
+                if(materialParams.elapsedTime > materialParams.vanishTimePoint)
+                {   
+                    timeRadio *= 1.0 - (materialParams.elapsedTime - materialParams.vanishTimePoint) / (materialParams.animationDuration - materialParams.vanishTimePoint);
+                }
+
+                colorResult = float4(0.2, 0.2, 0.2, timeRadio);
+
+            }
+        }
+
+        return colorResult;
+    }
+
+    float4 computerEmissiveColor(float delayTime)
+    {
+        float cycleTime = 3.0;
+        float emissiveFactor = 160.0;
+
+        float timeRadio = mod(materialParams.elapsedTime - delayTime, cycleTime) / cycleTime;
+        timeRadio = 1.0 - pow(timeRadio * 2.0 - 1.0, 2.0);
+        timeRadio = pow(timeRadio, 20.0);
+
+        float emissiveStrength = emissiveFactor * timeRadio;
+        return float4(emissiveStrength, emissiveStrength, emissiveStrength, 0.0);
+    }
+
+
+
+    void material(inout MaterialInputs material) {
+        prepareMaterial(material);
+
+        float4 lightRingColor1 = lightRingColor(0.06, 0.0, 0.6);
+        float4 lightRingColor2 = lightRingColor(0.14, 0.1, 0.5);
+        float4 lightRingColor3 = lightRingColor(0.22, 0.2, 0.4);
+        float4 lightRingColor4 = lightRingColor(0.30, 0.3, 0.3);
+        float4 lightRingColor5 = lightRingColor(0.38, 0.4, 0.2);
+        float4 lightRingColor6 = lightRingColor(0.46, 0.5, 0.18);
+        float4 lightRingColor7 = lightRingColor(0.47, 0.52, 0.12);
+        float4 lightRingColor = lightRingColor1 + lightRingColor2 + lightRingColor3 + lightRingColor4 + lightRingColor5 + lightRingColor6 + lightRingColor7;
+        material.baseColor.rgb = lightRingColor.rgb * lightRingColor.a;
+        material.baseColor.a = lightRingColor.a;
+
+        float4 arrowLine = arrowColor();
+        material.baseColor.rgb = material.baseColor.rgb * (1.0 - arrowLine.a) + arrowLine.rgb * arrowLine.a;
+        material.baseColor.a = max(material.baseColor.a, arrowLine.a);
+
+        float4 scanColor = scanColor();
+        material.baseColor.rgb = material.baseColor.rgb * (1.0 - scanColor.a) + scanColor.rgb * scanColor.a;
+        material.baseColor.a = max(material.baseColor.a, scanColor.a);
+
+        
+
+        if(materialParams.elapsedTime > 1.2 && materialParams.elapsedTime < materialParams.animationDuration)
+        {
+            
+            if(lightRingColor1.r > 0.0)
+            {
+                material.emissive = computerEmissiveColor(0.0);
+            }
+
+            if(lightRingColor2.r > 0.0)
+            {
+                material.emissive = computerEmissiveColor(0.2);
+            }
+
+            if(lightRingColor3.r > 0.0)
+            {
+                material.emissive = computerEmissiveColor(0.4);
+            }
+
+            if(lightRingColor4.r > 0.0)
+            {
+                material.emissive = computerEmissiveColor(0.6);
+            }
+                        
+            if(lightRingColor5.r > 0.0)
+            {
+                material.emissive = computerEmissiveColor(0.8);
+            }
+
+            if(lightRingColor6.r > 0.0)
+            {
+                material.emissive = computerEmissiveColor(1.0);
+            }
+
+            if(lightRingColor7.r > 0.0)
+            {
+                material.emissive = computerEmissiveColor(1.1);
+            }
+
+            
+            
+
+
+
+        }
+
+
+        if(materialParams.elapsedTime > materialParams.vanishTimePoint)
+        {
+            float alpha = 1.0 - (materialParams.elapsedTime - materialParams.vanishTimePoint) / (materialParams.animationDuration - materialParams.vanishTimePoint);
+            material.emissive *= alpha;
+
+        }
+
+    }
+}
