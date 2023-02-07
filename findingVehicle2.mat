@@ -6,6 +6,7 @@ material {
         uv0
     ],
     blending : transparent,
+    postLightingBlending: add,
     parameters : [
         {
             type : float,
@@ -27,7 +28,7 @@ fragment {
     {
         float4 colorResult = float4(0, 0, 0, 0);
 
-        float lightRingWidth = 0.003;
+        float lightRingWidth = 0.0035;
 
         float2 uv = uvToRenderTargetUV(getUV0());
         float2 center = float2(0.5, 0.5);
@@ -164,7 +165,7 @@ fragment {
     float4 computerEmissiveColor(float delayTime)
     {
         float cycleTime = 3.0;
-        float emissiveFactor = 160.0;
+        float emissiveFactor = 0.2;
 
         float timeRadio = mod(materialParams.elapsedTime - delayTime, cycleTime) / cycleTime;
         timeRadio = 1.0 - pow(timeRadio * 2.0 - 1.0, 2.0);
@@ -205,37 +206,37 @@ fragment {
             
             if(lightRingColor1.r > 0.0)
             {
-                material.emissive = computerEmissiveColor(0.0);
+                material.postLightingColor = computerEmissiveColor(0.0);
             }
 
             if(lightRingColor2.r > 0.0)
             {
-                material.emissive = computerEmissiveColor(0.2);
+                material.postLightingColor = computerEmissiveColor(0.2);
             }
 
             if(lightRingColor3.r > 0.0)
             {
-                material.emissive = computerEmissiveColor(0.4);
+                material.postLightingColor = computerEmissiveColor(0.4);
             }
 
             if(lightRingColor4.r > 0.0)
             {
-                material.emissive = computerEmissiveColor(0.6);
+                material.postLightingColor = computerEmissiveColor(0.6);
             }
                         
             if(lightRingColor5.r > 0.0)
             {
-                material.emissive = computerEmissiveColor(0.8);
+                material.postLightingColor = computerEmissiveColor(0.8);
             }
 
             if(lightRingColor6.r > 0.0)
             {
-                material.emissive = computerEmissiveColor(1.0);
+                material.postLightingColor = computerEmissiveColor(1.0);
             }
 
             if(lightRingColor7.r > 0.0)
             {
-                material.emissive = computerEmissiveColor(1.1);
+                material.postLightingColor = computerEmissiveColor(1.1);
             }
 
             
@@ -249,7 +250,7 @@ fragment {
         if(materialParams.elapsedTime > materialParams.vanishTimePoint)
         {
             float alpha = 1.0 - (materialParams.elapsedTime - materialParams.vanishTimePoint) / (materialParams.animationDuration - materialParams.vanishTimePoint);
-            material.emissive *= alpha;
+            material.postLightingColor *= alpha;
 
         }
 
