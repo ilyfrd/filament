@@ -82,7 +82,7 @@ fragment {
         float2 uv = uvToRenderTargetUV(getUV0());
         float2 center = float2(0.5, 0.5);
         float2 currentLine = uv - center;
-        float referenceAngle = materialParams.elapsedTime * 1.0;  
+        float referenceAngle = materialParams.elapsedTime * 6.0;  
         float2 referenceLine = float2(cos(referenceAngle), sin(referenceAngle));
 
         float currentRadius = length(float3(uv - center, 0.0));
@@ -93,7 +93,7 @@ fragment {
         float angleMax = 150.0;
         float colorRadio = pow(angle / angleMax, 3.0) * pow(currentRadius / 0.5, 2.0);
 
-        float duration = 1.0;
+        float duration = 2.0;
         float timeRadio = 0.0;
         if(materialParams.elapsedTime < duration)
             timeRadio = materialParams.elapsedTime / duration;
@@ -137,7 +137,7 @@ fragment {
 
             float currentRadius = length(float3(uv - center, 0));
 
-            float duration = 2.0;
+            float duration = 1.0;
             float timeRadio = 0.0;
             if(elapsedTime < duration)
                 timeRadio = elapsedTime / duration;
@@ -164,7 +164,7 @@ fragment {
 
     float4 computerEmissiveColor(float delayTime)
     {
-        float cycleTime = 3.0;
+        float cycleTime = 1.0;
         float emissiveFactor = 0.2;
 
         float timeRadio = mod(materialParams.elapsedTime - delayTime, cycleTime) / cycleTime;
@@ -195,13 +195,14 @@ fragment {
         material.baseColor.rgb = material.baseColor.rgb * (1.0 - arrowLine.a) + arrowLine.rgb * arrowLine.a;
         material.baseColor.a = max(material.baseColor.a, arrowLine.a);
 
-        float4 scanColor = scanColor();
-        material.baseColor.rgb = material.baseColor.rgb * (1.0 - scanColor.a) + scanColor.rgb * scanColor.a;
-        material.baseColor.a = max(material.baseColor.a, scanColor.a);
+        if(materialParams.elapsedTime > 1.0)
+        {
+            float4 scanColor = scanColor();
+            material.baseColor.rgb = material.baseColor.rgb * (1.0 - scanColor.a) + scanColor.rgb * scanColor.a;
+            material.baseColor.a = max(material.baseColor.a, scanColor.a);
+        }
 
-        
-
-        if(materialParams.elapsedTime > 1.2 && materialParams.elapsedTime < materialParams.animationDuration)
+        if(materialParams.elapsedTime > 1.0 && materialParams.elapsedTime < materialParams.animationDuration)
         {
             
             if(lightRingColor1.r > 0.0)
@@ -211,32 +212,32 @@ fragment {
 
             if(lightRingColor2.r > 0.0)
             {
-                material.postLightingColor = computerEmissiveColor(0.2);
+                material.postLightingColor = computerEmissiveColor(0.1);
             }
 
             if(lightRingColor3.r > 0.0)
             {
-                material.postLightingColor = computerEmissiveColor(0.4);
+                material.postLightingColor = computerEmissiveColor(0.2);
             }
 
             if(lightRingColor4.r > 0.0)
             {
-                material.postLightingColor = computerEmissiveColor(0.6);
+                material.postLightingColor = computerEmissiveColor(0.3);
             }
                         
             if(lightRingColor5.r > 0.0)
             {
-                material.postLightingColor = computerEmissiveColor(0.8);
+                material.postLightingColor = computerEmissiveColor(0.4);
             }
 
             if(lightRingColor6.r > 0.0)
             {
-                material.postLightingColor = computerEmissiveColor(1.0);
+                material.postLightingColor = computerEmissiveColor(0.5);
             }
 
             if(lightRingColor7.r > 0.0)
             {
-                material.postLightingColor = computerEmissiveColor(1.1);
+                material.postLightingColor = computerEmissiveColor(0.51);
             }
 
             
